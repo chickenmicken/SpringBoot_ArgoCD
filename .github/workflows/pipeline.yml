@@ -113,8 +113,10 @@ jobs:
 
       - name: Push changes to a temporary branch
         run: |
-          git checkout -b temp-branch-${{ github.run_id }}
-          git push origin temp-branch-${{ github.run_id }}
+          new_branch="temp-branch-${{ github.run_id }}"
+          git checkout -b $new_branch
+          git push origin $new_branch
+          echo "Pushed $new_branch"
 
       - name: Create pull request
         uses: repo-sync/pull-request@v2

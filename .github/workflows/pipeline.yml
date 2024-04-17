@@ -89,44 +89,40 @@ jobs:
           # Example:
           # newman run collection.json -e environment.json
 
-  name: deploy-to-production
-  on:
-  push:
-  branches:
-  - main
+  deploy-to-production:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout GitOps repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.actor }}/ArgoCD_GitOps
+          token: ${{ secrets.REPOSITORY_ACCESS_TOKEN }}
+          ref: main
 
-  jobs:
-    deploy:
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout GitOps repository
-          uses: actions/checkout@v4
-          with:
-            repository: ${{ github.actor }}/ArgoCD_GitOps
-            token: ${{ secrets.REPOSITORY_ACCESS_TOKEN }}
-            ref: main
+      - name: Update image tag with version from staging in production values.yml
+        run: |
+          version=$(grep 'tag:' values_staging.yml | awk '{print $2}')
+          sed -i "s/tag: .*/tag: $version/" values_production.yml
 
-        - name: Update image tag with version from staging in production values.yml
-          run: |
-            version=$(grep 'tag:' values_staging.yml | awk '{print $2}')
-            sed -i "s/tag: .*/tag: $version/" values_production.yml
+      - name: Commit changes to GitOps repository
+        run: |
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "github-actions"
+          git add values_production.yml
 
-        - name: Commit changes to GitOps repository
-          run: |
-            git config --global user.email "github-actions@github.com"
-            git config --global user.name "github-actions"
-            git add values_production.yml
-            git commit -m "Update production image to version $version"
+      - name: Push changes to a temporary branch
+        run: |
+          new_branch="temp-branch-${{ github.run_id }}"
+          git checkout -b temp-branch-${{ github.run_id }}
+          git push origin temp-branch-${{ github.run_id }}
 
-        - name: Create pull request
-          uses: peter-evans/create-pull-request@v3
-          with:
-            token: ${{ secrets.REPOSITORY_ACCESS_TOKEN }}
-            commit-message: "Update production image to version $version"
-            title: "Deploy $version to production"
-            body: |
-              This PR updates the production image to version $version.
-              Please review the changes and merge them to deploy to production.
-            branch: ${{ github.head_ref }}
-            base: main
-            assignees: chickenmicken
+      - name: Create pull request
+        uses: repo-sync/pull-request@v2
+        with:
+          github_token: ${{ secrets.REPOSITORY_ACCESS_TOKEN }}
+          pr_title: "Deploy $version to production"
+          pr_body: "This PR updates the production image to version $version. Please review the changes and merge them to deploy to production."
+          destination_branch: "main"
+          source_branch: "temp-branch-${{ github.run_id }}"
+          pr_assignees: "chickenmicken"

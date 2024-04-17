@@ -124,4 +124,4 @@ jobs:
           pr_body: "This PR updates the production image to version $version. Please review the changes and merge them to deploy to production."
           destination_branch: "main"
           source_branch: "temp-branch-${{ github.run_id }}"
-          assignees: "chickenmicken"
+          pr_assignee: "chickenmicken"

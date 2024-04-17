@@ -111,6 +111,12 @@ jobs:
           git config --global user.name "github-actions"
           git add values_production.yml
 
+      - name: Create new branch
+        run: git checkout -b temp-branch-${{ github.run_id }}
+
+      - name: Push changes to new branch
+        run: git push origin temp-branch-${{ github.run_id }}
+
       - name: Create pull request
         uses: repo-sync/pull-request@v2
         with:
@@ -118,5 +124,5 @@ jobs:
           pr_title: "Deploy $version to production"
           pr_body: "This PR updates the production image to version $version. Please review the changes and merge them to deploy to production."
           destination_branch: "main"
-          source_branch: "${{ env.COMMIT_HASH }}"
+          source_branch: "temp-branch-${{ github.run_id }}"
           pr_reviewer: "chickenmicken"

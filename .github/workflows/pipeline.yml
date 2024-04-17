@@ -118,5 +118,5 @@ jobs:
           pr_title: "Deploy $version to production"
           pr_body: "This PR updates the production image to version $version. Please review the changes and merge them to deploy to production."
           destination_branch: "main"
-          source_branch: "refs/heads/development"
+          source_branch: "${{ env.COMMIT_HASH }}"
           pr_reviewer: "chickenmicken"
